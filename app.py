@@ -461,15 +461,34 @@ if fetch_btn or "matches_df" in st.session_state:
             elif val >= 45: return "color:#ecc94b; font-weight:700"
             else: return "color:#fc8181; font-weight:700"
 
-        styled = display_df.style\
-            .applymap(lambda v: color_prob(v) if isinstance(v, float) else "",
-                      subset=["P(Home)%","P(Draw)%","P(Away)%","Best Prob%"])\
-            .set_properties(**{"background-color":"#1a1a2e","color":"#e2e8f0"})\
-            .set_table_styles([{
-                "selector":"th",
-                "props":[("background-color","#0f3460"),
-                         ("color","#fff"),("font-weight","700")]
-            }])
+        def style_prob_cols(val):
+            try:
+                return color_prob(float(val))
+            except (TypeError, ValueError):
+                return ""
+
+        try:
+            # pandas >= 2.1
+            styled = display_df.style\
+                .map(style_prob_cols,
+                     subset=["P(Home)%","P(Draw)%","P(Away)%","Best Prob%"])\
+                .set_properties(**{"background-color":"#1a1a2e","color":"#e2e8f0"})\
+                .set_table_styles([{
+                    "selector":"th",
+                    "props":[("background-color","#0f3460"),
+                             ("color","#fff"),("font-weight","700")]
+                }])
+        except AttributeError:
+            # pandas < 2.1 fallback
+            styled = display_df.style\
+                .applymap(style_prob_cols,
+                          subset=["P(Home)%","P(Draw)%","P(Away)%","Best Prob%"])\
+                .set_properties(**{"background-color":"#1a1a2e","color":"#e2e8f0"})\
+                .set_table_styles([{
+                    "selector":"th",
+                    "props":[("background-color","#0f3460"),
+                             ("color","#fff"),("font-weight","700")]
+                }])
         st.dataframe(styled, use_container_width=True, height=420)
 
         # Download
